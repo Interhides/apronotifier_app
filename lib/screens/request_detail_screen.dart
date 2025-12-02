@@ -329,6 +329,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     final typeColor = so.type == 'Z12M'
         ? AppTheme.primaryColor
         : AppTheme.secondaryColor;
+    
+    // Calculate percentage: (SF - Order_qty) / Order_qty * 100
+    final percentage = ((so.sf - so.orderQty) / so.orderQty * 100);
+    final percentageColor = percentage > 30 ? Colors.red : (percentage > 0 ? Colors.orange : AppTheme.accentColor);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -376,6 +380,34 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
+                  ),
+                ),
+                // Percentage Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: percentageColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: percentageColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        percentage > 30 ? Icons.warning : Icons.trending_up,
+                        size: 12,
+                        color: percentageColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${percentage >= 0 ? '+' : ''}${percentage.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          color: percentageColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
