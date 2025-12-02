@@ -378,28 +378,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: so.status == 'Approved'
-                        ? AppTheme.accentColor.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    so.status,
-                    style: TextStyle(
-                      color: so.status == 'Approved'
-                          ? AppTheme.accentColor
-                          : Colors.orange,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),

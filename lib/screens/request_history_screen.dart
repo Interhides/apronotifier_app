@@ -3,17 +3,15 @@ import '../models/approval_request_model.dart';
 import '../services/database_helper.dart';
 import '../theme/app_theme.dart';
 import 'request_detail_screen.dart';
-import 'request_history_screen.dart';
 
-class ApprovalRequestListScreen extends StatefulWidget {
-  const ApprovalRequestListScreen({super.key});
+class RequestHistoryScreen extends StatefulWidget {
+  const RequestHistoryScreen({super.key});
 
   @override
-  State<ApprovalRequestListScreen> createState() =>
-      _ApprovalRequestListScreenState();
+  State<RequestHistoryScreen> createState() => _RequestHistoryScreenState();
 }
 
-class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
+class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
   List<ApprovalRequestModel> _requests = [];
   bool _isLoading = true;
 
@@ -25,7 +23,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
 
   Future<void> _loadRequests() async {
     setState(() => _isLoading = true);
-    final requests = await DatabaseHelper.instance.getPendingRequests();
+    final requests = await DatabaseHelper.instance.getApprovedRequests();
     setState(() {
       _requests = requests;
       _isLoading = false;
@@ -35,98 +33,26 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        title: const Text('Request History'),
         backgroundColor: Colors.white,
+        foregroundColor: AppTheme.primaryColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RequestHistoryScreen(),
-                ),
-              );
-            },
-            tooltip: 'View History',
-          ),
-        ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.primaryColor.withOpacity(0.05),
-              AppTheme.secondaryColor.withOpacity(0.05),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildStatCards(),
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
-                        ),
-                      )
-                    : _requests.isEmpty
+      body: Column(
+        children: [
+          _buildStatCards(),
+          Expanded(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : _requests.isEmpty
                     ? _buildEmptyState()
                     : _buildRequestList(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.approval, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Approval Requests',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-              Text(
-                'Review and approve SO requests',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              ),
-            ],
           ),
         ],
       ),
@@ -134,50 +60,48 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   }
 
   Widget _buildStatCards() {
-    final pendingCount = _requests.where((r) => r.status == 'Pending').length;
     final totalSOCount = _requests.fold<int>(0, (sum, r) => sum + r.soCount);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.accentColor, AppTheme.accentColor.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Expanded(
-            child: _buildStatCard(
-              'Total',
-              _requests.length.toString(),
-              Icons.folder_outlined,
-              AppTheme.primaryColor,
-            ),
+          _buildStatItem(
+            Icons.check_circle_outline,
+            _requests.length.toString(),
+            'Approved\nRequests',
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              'Pending',
-              pendingCount.toString(),
-              Icons.pending_actions,
-              Colors.orange,
-            ),
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.white.withOpacity(0.3),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              'SO Orders',
-              totalSOCount.toString(),
-              Icons.inventory_2_outlined,
-              AppTheme.accentColor,
-            ),
+          _buildStatItem(
+            Icons.inventory_2_outlined,
+            totalSOCount.toString(),
+            'Total SO\nOrders',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStatItem(IconData icon, String value, String label) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 600),
@@ -185,37 +109,29 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       builder: (context, animValue, child) {
         return Transform.scale(
           scale: animValue,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.white, size: 32),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.3,
                 ),
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -227,10 +143,14 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
+          Icon(
+            Icons.history,
+            size: 80,
+            color: Colors.grey[300],
+          ),
           const SizedBox(height: 16),
           Text(
-            'No approval requests',
+            'No approved requests',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -239,8 +159,11 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'All requests will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            'Approved requests will appear here',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
           ),
         ],
       ),
@@ -252,7 +175,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       onRefresh: _loadRequests,
       color: AppTheme.primaryColor,
       child: ListView.builder(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _requests.length,
         itemBuilder: (context, index) {
           return TweenAnimationBuilder<double>(
@@ -276,9 +199,6 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   }
 
   Widget _buildRequestCard(ApprovalRequestModel request) {
-    final isPending = request.status == 'Pending';
-    final statusColor = isPending ? Colors.orange : AppTheme.accentColor;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -286,7 +206,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: statusColor.withOpacity(0.1),
+            color: AppTheme.accentColor.withOpacity(0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -310,22 +230,22 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: AppTheme.accentColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isPending ? Icons.pending : Icons.check_circle,
+                            Icons.check_circle,
                             size: 16,
-                            color: statusColor,
+                            color: AppTheme.accentColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            request.status,
+                            'Approved',
                             style: TextStyle(
-                              color: statusColor,
+                              color: AppTheme.accentColor,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
@@ -436,6 +356,6 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       MaterialPageRoute(
         builder: (context) => RequestDetailScreen(request: request),
       ),
-    ).then((_) => _loadRequests()); // Refresh list when returning
+    );
   }
 }

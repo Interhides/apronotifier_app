@@ -82,8 +82,7 @@ CREATE TABLE so_orders (
   pcs $intType,
   sf $doubleType,
   packDate $textType,
-  source $textType,
-  status $textType
+  source $textType
   )
 ''');
 
@@ -158,7 +157,6 @@ CREATE TABLE production_orders (
       'sf': 15.70,
       'packDate': '2025/12/1',
       'source': 'IHL stock move to order',
-      'status': 'Pending',
     });
 
     await db.insert('so_orders', {
@@ -176,7 +174,6 @@ CREATE TABLE production_orders (
       'sf': 14.40,
       'packDate': '2025/12/1',
       'source': 'Wet blue/蓝湿皮',
-      'status': 'Pending',
     });
 
     await db.insert('so_orders', {
@@ -194,7 +191,6 @@ CREATE TABLE production_orders (
       'sf': 26.10,
       'packDate': '2025/12/1',
       'source': 'IHL STOCK QC /IHL品检IHL',
-      'status': 'Approved',
     });
 
     // Request 2 - 2 SO orders
@@ -213,7 +209,6 @@ CREATE TABLE production_orders (
       'sf': 22.50,
       'packDate': '2025/12/2',
       'source': 'Direct from supplier',
-      'status': 'Pending',
     });
 
     await db.insert('so_orders', {
@@ -231,7 +226,6 @@ CREATE TABLE production_orders (
       'sf': 35.80,
       'packDate': '2025/12/3',
       'source': 'Stock transfer',
-      'status': 'Pending',
     });
 
     // Request 3 - 4 SO orders (Approved)
@@ -250,7 +244,6 @@ CREATE TABLE production_orders (
       'sf': 42.30,
       'packDate': '2025/12/5',
       'source': 'IHL STOCK QC /IHL品检IHL',
-      'status': 'Approved',
     });
 
     await db.insert('so_orders', {
@@ -268,7 +261,6 @@ CREATE TABLE production_orders (
       'sf': 18.60,
       'packDate': '2025/12/6',
       'source': 'Finished leather/成品革',
-      'status': 'Approved',
     });
 
     await db.insert('so_orders', {
@@ -286,7 +278,6 @@ CREATE TABLE production_orders (
       'sf': 31.20,
       'packDate': '2025/12/7',
       'source': 'Stock transfer/库存调拨',
-      'status': 'Approved',
     });
 
     await db.insert('so_orders', {
@@ -304,7 +295,6 @@ CREATE TABLE production_orders (
       'sf': 12.80,
       'packDate': '2025/12/8',
       'source': 'Wet blue/蓝湿皮',
-      'status': 'Approved',
     });
 
     // Request 4 - 1 SO order
@@ -323,7 +313,6 @@ CREATE TABLE production_orders (
       'sf': 28.90,
       'packDate': '2025/12/4',
       'source': 'Crust leather/皮坯',
-      'status': 'Pending',
     });
 
     await db.insert('production_orders', {
@@ -375,6 +364,28 @@ CREATE TABLE production_orders (
     return result.map((json) => ApprovalRequestModel.fromJson(json)).toList();
   }
 
+  Future<List<ApprovalRequestModel>> getPendingRequests() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'approval_requests',
+      where: 'status = ?',
+      whereArgs: ['Pending'],
+      orderBy: 'id DESC',
+    );
+    return result.map((json) => ApprovalRequestModel.fromJson(json)).toList();
+  }
+
+  Future<List<ApprovalRequestModel>> getApprovedRequests() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'approval_requests',
+      where: 'status = ?',
+      whereArgs: ['Approved'],
+      orderBy: 'id DESC',
+    );
+    return result.map((json) => ApprovalRequestModel.fromJson(json)).toList();
+  }
+
   Future<ApprovalRequestModel?> getApprovalRequest(int id) async {
     final db = await instance.database;
     final result = await db.query(
@@ -399,19 +410,11 @@ CREATE TABLE production_orders (
   Future<int> approveRequest(int requestId) async {
     final db = await instance.database;
 
-    // Update request status
-    await db.update(
+    // Update request status only
+    return await db.update(
       'approval_requests',
       {'status': 'Approved'},
       where: 'id = ?',
-      whereArgs: [requestId],
-    );
-
-    // Update all SO orders in this request
-    return await db.update(
-      'so_orders',
-      {'status': 'Approved'},
-      where: 'requestId = ?',
       whereArgs: [requestId],
     );
   }

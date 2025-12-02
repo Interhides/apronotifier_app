@@ -14,7 +14,6 @@ class SOModel {
   final double sf; // SF (square feet)
   final String packDate; // PACK DATE
   final String source; // SOURCE
-  final String status; // Pending, Approved
 
   SOModel({
     required this.id,
@@ -32,7 +31,6 @@ class SOModel {
     required this.sf,
     required this.packDate,
     required this.source,
-    required this.status,
   });
 
   factory SOModel.fromJson(Map<String, dynamic> json) {
@@ -52,7 +50,6 @@ class SOModel {
       sf: json['sf']?.toDouble() ?? 0.0,
       packDate: json['packDate'] ?? '',
       source: json['source'] ?? '',
-      status: json['status'] ?? 'Pending',
     );
   }
 
@@ -73,7 +70,6 @@ class SOModel {
       'sf': sf,
       'packDate': packDate,
       'source': source,
-      'status': status,
     };
   }
 }
