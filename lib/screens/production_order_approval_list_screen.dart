@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import '../models/approval_request_model.dart';
 import '../services/database_helper.dart';
 import '../theme/app_theme.dart';
-import 'request_detail_screen.dart';
-import 'request_history_screen.dart';
+import 'production_order_detail_screen.dart';
+import 'production_order_history_screen.dart';
 
-class ApprovalRequestListScreen extends StatefulWidget {
-  const ApprovalRequestListScreen({super.key});
+class ProductionOrderApprovalListScreen extends StatefulWidget {
+  const ProductionOrderApprovalListScreen({super.key});
 
   @override
-  State<ApprovalRequestListScreen> createState() =>
-      _ApprovalRequestListScreenState();
+  State<ProductionOrderApprovalListScreen> createState() =>
+      _ProductionOrderApprovalListScreenState();
 }
 
-class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
+class _ProductionOrderApprovalListScreenState
+    extends State<ProductionOrderApprovalListScreen> {
   List<ApprovalRequestModel> _requests = [];
   bool _isLoading = true;
 
@@ -25,11 +26,12 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
 
   Future<void> _loadRequests() async {
     setState(() => _isLoading = true);
+    // Get all pending requests that have production orders (requestId >= 5 based on our sample data)
     final allRequests = await DatabaseHelper.instance.getPendingRequests();
-    // Filter to show only SO requests (requestId < 5), exclude PO requests
-    final soRequests = allRequests.where((r) => r.id < 5).toList();
+    // Filter to show only production order requests (requestId >= 5)
+    final poRequests = allRequests.where((r) => r.id >= 5).toList();
     setState(() {
-      _requests = soRequests;
+      _requests = poRequests;
       _isLoading = false;
     });
   }
@@ -47,7 +49,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RequestHistoryScreen(),
+                  builder: (context) => const ProductionOrderHistoryScreen(),
                 ),
               );
             },
@@ -61,8 +63,8 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryColor.withOpacity(0.05),
               AppTheme.secondaryColor.withOpacity(0.05),
+              AppTheme.primaryColor.withOpacity(0.05),
             ],
           ),
         ),
@@ -75,12 +77,12 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
                 child: _isLoading
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.secondaryColor,
                         ),
                       )
                     : _requests.isEmpty
-                    ? _buildEmptyState()
-                    : _buildRequestList(),
+                        ? _buildEmptyState()
+                        : _buildRequestList(),
               ),
             ],
           ),
@@ -98,35 +100,36 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                colors: [AppTheme.secondaryColor, AppTheme.primaryColor],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  color: AppTheme.secondaryColor.withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Icon(Icons.approval, color: Colors.white, size: 24),
+            child: const Icon(Icons.precision_manufacturing,
+                color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Approval Requests',
+                'Production Orders',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.secondaryColor,
+                    ),
               ),
               Text(
-                'Review and approve SO requests',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                'Review and approve PO requests',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
               ),
             ],
           ),
@@ -137,7 +140,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
 
   Widget _buildStatCards() {
     final pendingCount = _requests.where((r) => r.status == 'Pending').length;
-    final totalSOCount = _requests.fold<int>(0, (sum, r) => sum + r.soCount);
+    final totalPOCount = _requests.fold<int>(0, (sum, r) => sum + r.soCount);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -148,7 +151,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
               'Total',
               _requests.length.toString(),
               Icons.folder_outlined,
-              AppTheme.primaryColor,
+              AppTheme.secondaryColor,
             ),
           ),
           const SizedBox(width: 12),
@@ -163,9 +166,9 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              'SO Orders',
-              totalSOCount.toString(),
-              Icons.inventory_2_outlined,
+              'PO Items',
+              totalPOCount.toString(),
+              Icons.precision_manufacturing,
               AppTheme.accentColor,
             ),
           ),
@@ -232,7 +235,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
           Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            'No approval requests',
+            'No PO requests',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -241,7 +244,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'All requests will appear here',
+            'Production order requests will appear here',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
@@ -252,7 +255,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   Widget _buildRequestList() {
     return RefreshIndicator(
       onRefresh: _loadRequests,
-      color: AppTheme.primaryColor,
+      color: AppTheme.secondaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: _requests.length,
@@ -342,22 +345,22 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        color: AppTheme.secondaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.inventory_2,
+                            Icons.precision_manufacturing,
                             size: 16,
-                            color: AppTheme.primaryColor,
+                            color: AppTheme.secondaryColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${request.soCount} SO${request.soCount > 1 ? 's' : ''}',
+                            '${request.soCount} PO${request.soCount > 1 ? 's' : ''}',
                             style: TextStyle(
-                              color: AppTheme.primaryColor,
+                              color: AppTheme.secondaryColor,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
@@ -436,8 +439,8 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RequestDetailScreen(request: request),
+        builder: (context) => ProductionOrderDetailScreen(request: request),
       ),
-    ).then((_) => _loadRequests()); // Refresh list when returning
+    ).then((_) => _loadRequests());
   }
 }

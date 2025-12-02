@@ -23,9 +23,11 @@ class _RequestHistoryScreenState extends State<RequestHistoryScreen> {
 
   Future<void> _loadRequests() async {
     setState(() => _isLoading = true);
-    final requests = await DatabaseHelper.instance.getApprovedRequests();
+    final allRequests = await DatabaseHelper.instance.getApprovedRequests();
+    // Filter to show only SO requests (requestId < 5), exclude PO requests
+    final soRequests = allRequests.where((r) => r.id < 5).toList();
     setState(() {
-      _requests = requests;
+      _requests = soRequests;
       _isLoading = false;
     });
   }

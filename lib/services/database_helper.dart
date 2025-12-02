@@ -22,17 +22,18 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 3) {
-      // Add approval_requests table and link SO to requests
+    if (oldVersion < 4) {
+      // Recreate all tables with new structure
       await db.execute('DROP TABLE IF EXISTS so_orders');
       await db.execute('DROP TABLE IF EXISTS production_orders');
+      await db.execute('DROP TABLE IF EXISTS approval_requests');
       await db.execute('DROP TABLE IF EXISTS users');
 
       // Recreate tables with new structure
@@ -89,10 +90,19 @@ CREATE TABLE so_orders (
     await db.execute('''
 CREATE TABLE production_orders ( 
   id $idType, 
-  orderNumber $textType,
-  productName $textType,
-  quantity $intType,
-  status $textType
+  requestId $intType,
+  type $textType,
+  orderDate $textType,
+  brand $textType,
+  line $textType,
+  sapPoNumber $textType,
+  materialCode $textType,
+  orderQty $intType,
+  batchCardNo $textType,
+  pcs $intType,
+  sf $doubleType,
+  packDate $textType,
+  source $textType
   )
 ''');
 
@@ -315,35 +325,84 @@ CREATE TABLE production_orders (
       'source': 'Crust leather/皮坯',
     });
 
-    await db.insert('production_orders', {
-      'orderNumber': 'PO-2023-101',
-      'productName': 'Widget A',
-      'quantity': 100,
+    // Insert Production Order Approval Requests (each request has 1 PO item)
+    await db.insert('approval_requests', {
+      'requestMessage':
+          'Production order needs urgent approval - material arrived early and ready for processing.',
+      'requesterName': 'David Lee',
+      'requestDate': '2025/12/01',
+      'requestTime': '11:00 AM',
+      'soCount': 1, // For PO requests, this represents PO count
       'status': 'Pending',
     });
-    await db.insert('production_orders', {
-      'orderNumber': 'PO-2023-102',
-      'productName': 'Gadget B',
-      'quantity': 250,
+
+    await db.insert('approval_requests', {
+      'requestMessage':
+          'Rush order for VIP customer - requesting approval to expedite production schedule.',
+      'requesterName': 'Linda Martinez',
+      'requestDate': '2025/12/02',
+      'requestTime': '02:30 PM',
+      'soCount': 1,
       'status': 'Pending',
     });
-    await db.insert('production_orders', {
-      'orderNumber': 'PO-2023-103',
-      'productName': 'Nano Tech Suit',
-      'quantity': 5,
-      'status': 'Pending',
-    });
-    await db.insert('production_orders', {
-      'orderNumber': 'PO-2023-104',
-      'productName': 'T-800 Chip',
-      'quantity': 50,
-      'status': 'Pending',
-    });
-    await db.insert('production_orders', {
-      'orderNumber': 'PO-2023-105',
-      'productName': 'T-Virus Vial',
-      'quantity': 1000,
+
+    await db.insert('approval_requests', {
+      'requestMessage':
+          'Quality inspection complete - all materials meet standards, requesting production approval.',
+      'requesterName': 'Robert Kim',
+      'requestDate': '2025/11/30',
+      'requestTime': '04:15 PM',
+      'soCount': 1,
       'status': 'Approved',
+    });
+
+    // Insert Production Orders linked to requests (Request IDs 5, 6, 7)
+    await db.insert('production_orders', {
+      'requestId': 5,
+      'type': 'Z12M',
+      'orderDate': '12/01',
+      'brand': 'ADIDAS',
+      'line': '15',
+      'sapPoNumber': '900332501820',
+      'materialCode': '3FG-PR01-LT09-4567',
+      'orderQty': 50,
+      'batchCardNo': 'Z12M25323050',
+      'pcs': 10,
+      'sf': 75.50,
+      'packDate': '2025/12/10',
+      'source': 'Direct from tannery/直接从制革厂',
+    });
+
+    await db.insert('production_orders', {
+      'requestId': 6,
+      'type': 'Z12H',
+      'orderDate': '12/02',
+      'brand': 'NIKE',
+      'line': '22',
+      'sapPoNumber': '900332501825',
+      'materialCode': '3FG-PR01-LT10-8901',
+      'orderQty': 35,
+      'batchCardNo': 'Z12H25324060',
+      'pcs': 7,
+      'sf': 52.30,
+      'packDate': '2025/12/12',
+      'source': 'Stock replenishment/库存补充',
+    });
+
+    await db.insert('production_orders', {
+      'requestId': 7,
+      'type': 'Z12M',
+      'orderDate': '11/30',
+      'brand': 'PUMA',
+      'line': '18',
+      'sapPoNumber': '900332501830',
+      'materialCode': '3FG-PR01-LT11-2345',
+      'orderQty': 28,
+      'batchCardNo': 'Z12M25322070',
+      'pcs': 6,
+      'sf': 41.80,
+      'packDate': '2025/12/09',
+      'source': 'Finished leather/成品革',
     });
   }
 
@@ -419,6 +478,17 @@ CREATE TABLE production_orders (
     );
   }
 
+  Future<List<ProductionOrderModel>> getProductionOrdersByRequestId(
+      int requestId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'production_orders',
+      where: 'requestId = ?',
+      whereArgs: [requestId],
+    );
+    return result.map((json) => ProductionOrderModel.fromJson(json)).toList();
+  }
+
   Future<List<SOModel>> getSOOrders() async {
     final db = await instance.database;
     final result = await db.query('so_orders');
@@ -429,25 +499,5 @@ CREATE TABLE production_orders (
     final db = await instance.database;
     final result = await db.query('production_orders');
     return result.map((json) => ProductionOrderModel.fromJson(json)).toList();
-  }
-
-  Future<int> updateSOStatus(int id, String status) async {
-    final db = await instance.database;
-    return await db.update(
-      'so_orders',
-      {'status': status},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  Future<int> updateProductionOrderStatus(int id, String status) async {
-    final db = await instance.database;
-    return await db.update(
-      'production_orders',
-      {'status': status},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
   }
 }

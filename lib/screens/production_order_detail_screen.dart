@@ -1,36 +1,37 @@
 import 'package:flutter/material.dart';
 import '../models/approval_request_model.dart';
-import '../models/so_model.dart';
+import '../models/production_order_model.dart';
 import '../services/database_helper.dart';
 import '../theme/app_theme.dart';
 
-class RequestDetailScreen extends StatefulWidget {
+class ProductionOrderDetailScreen extends StatefulWidget {
   final ApprovalRequestModel request;
 
-  const RequestDetailScreen({super.key, required this.request});
+  const ProductionOrderDetailScreen({super.key, required this.request});
 
   @override
-  State<RequestDetailScreen> createState() => _RequestDetailScreenState();
+  State<ProductionOrderDetailScreen> createState() =>
+      _ProductionOrderDetailScreenState();
 }
 
-class _RequestDetailScreenState extends State<RequestDetailScreen> {
-  List<SOModel> _soOrders = [];
+class _ProductionOrderDetailScreenState
+    extends State<ProductionOrderDetailScreen> {
+  List<ProductionOrderModel> _poOrders = [];
   bool _isLoading = true;
   bool _isApproving = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSOOrders();
+    _loadPOOrders();
   }
 
-  Future<void> _loadSOOrders() async {
+  Future<void> _loadPOOrders() async {
     setState(() => _isLoading = true);
-    final orders = await DatabaseHelper.instance.getSOOrdersByRequestId(
-      widget.request.id,
-    );
+    final orders =
+        await DatabaseHelper.instance.getProductionOrdersByRequestId(widget.request.id);
     setState(() {
-      _soOrders = orders;
+      _poOrders = orders;
       _isLoading = false;
     });
   }
@@ -48,14 +49,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Request approved successfully'),
+                Text('Production order approved successfully'),
               ],
             ),
             backgroundColor: AppTheme.accentColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
 
@@ -85,16 +85,21 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Request Details'),
+        title: const Text('Production Order Details'),
         backgroundColor: Colors.white,
-        foregroundColor: AppTheme.primaryColor,
+        foregroundColor: AppTheme.secondaryColor,
         elevation: 0,
       ),
       body: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
-              child: Column(children: [_buildRequestHeader(), _buildSOList()]),
+              child: Column(
+                children: [
+                  _buildRequestHeader(),
+                  _buildPOList(),
+                ],
+              ),
             ),
           ),
           if (isPending) _buildApproveButton(),
@@ -127,10 +132,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -157,27 +160,25 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppTheme.secondaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.inventory_2,
+                      Icons.precision_manufacturing,
                       size: 16,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.secondaryColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '${widget.request.soCount} SO${widget.request.soCount > 1 ? 's' : ''}',
+                      '${widget.request.soCount} PO${widget.request.soCount > 1 ? 's' : ''}',
                       style: TextStyle(
-                        color: AppTheme.primaryColor,
+                        color: AppTheme.secondaryColor,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -237,11 +238,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
+                        Icon(Icons.calendar_today,
+                            size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 6),
                         Text(
                           widget.request.requestDate,
@@ -251,11 +249,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
+                        Icon(Icons.access_time,
+                            size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 6),
                         Text(
                           widget.request.requestTime,
@@ -276,12 +271,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
   }
 
-  Widget _buildSOList() {
+  Widget _buildPOList() {
     if (_isLoading) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
-          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+          child: CircularProgressIndicator(color: AppTheme.secondaryColor),
         ),
       );
     }
@@ -292,8 +287,11 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            'Sales Orders (${_soOrders.length})',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            'Production Orders (${_poOrders.length})',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -301,7 +299,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: _soOrders.length,
+          itemCount: _poOrders.length,
           itemBuilder: (context, index) {
             return TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
@@ -316,7 +314,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   ),
                 );
               },
-              child: _buildSOCard(_soOrders[index]),
+              child: _buildPOCard(_poOrders[index]),
             );
           },
         ),
@@ -325,10 +323,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
   }
 
-  Widget _buildSOCard(SOModel so) {
-    final typeColor = so.type == 'Z12M'
-        ? AppTheme.primaryColor
-        : AppTheme.secondaryColor;
+  Widget _buildPOCard(ProductionOrderModel po) {
+    final typeColor =
+        po.type == 'Z12M' ? AppTheme.primaryColor : AppTheme.secondaryColor;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -351,16 +348,14 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: typeColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    so.type,
+                    po.type,
                     style: TextStyle(
                       color: typeColor,
                       fontWeight: FontWeight.bold,
@@ -371,7 +366,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    so.brand,
+                    po.brand,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -381,18 +376,20 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildDetailRow('SAP SO', so.sapSoNumber, Icons.receipt_long),
-            _buildDetailRow('Line', so.line, Icons.sort),
-            _buildDetailRow('SAP PO', so.sapPoNumber, Icons.shopping_cart),
-            _buildDetailRow('Material', so.materialCode, Icons.inventory),
-            _buildDetailRow('Source', so.source, Icons.source),
+            _buildDetailRow('Order Date', po.orderDate, Icons.calendar_today),
+            _buildDetailRow('Line', po.line, Icons.sort),
+            _buildDetailRow('SAP PO', po.sapPoNumber, Icons.shopping_cart),
+            _buildDetailRow('Material', po.materialCode, Icons.inventory),
+            _buildDetailRow('Batch Card', po.batchCardNo, Icons.badge),
+            _buildDetailRow('Pack Date', po.packDate, Icons.event),
+            _buildDetailRow('Source', po.source, Icons.source),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: _buildInfoChip(
                     'Qty',
-                    so.orderQty.toString(),
+                    po.orderQty.toString(),
                     AppTheme.primaryColor,
                   ),
                 ),
@@ -400,7 +397,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 Expanded(
                   child: _buildInfoChip(
                     'PCS',
-                    so.pcs.toString(),
+                    po.pcs.toString(),
                     AppTheme.secondaryColor,
                   ),
                 ),
@@ -408,7 +405,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 Expanded(
                   child: _buildInfoChip(
                     'SF',
-                    so.sf.toStringAsFixed(2),
+                    po.sf.toStringAsFixed(2),
                     AppTheme.accentColor,
                   ),
                 ),
@@ -429,12 +426,18 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -451,7 +454,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[600],
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             value,
@@ -506,7 +515,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     const Icon(Icons.check_circle, size: 20),
                     const SizedBox(width: 12),
                     Text(
-                      'Approve Request (${widget.request.soCount} SO${widget.request.soCount > 1 ? 's' : ''})',
+                      'Approve Production Order (${widget.request.soCount} PO${widget.request.soCount > 1 ? 's' : ''})',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

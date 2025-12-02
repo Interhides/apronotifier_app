@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import 'approval_request_list_screen.dart';
-import 'production_order_list_screen.dart';
+import 'production_order_approval_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   final List<Widget> _screens = [
     const ApprovalRequestListScreen(),
-    const ProductionOrderListScreen(),
+    const ProductionOrderApprovalListScreen(),
   ];
 
   @override
