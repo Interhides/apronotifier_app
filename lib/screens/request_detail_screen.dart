@@ -329,10 +329,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     final typeColor = so.type == 'Z12M'
         ? AppTheme.primaryColor
         : AppTheme.secondaryColor;
-    
+
     // Calculate percentage: (SF - Order_qty) / Order_qty * 100
     final percentage = ((so.sf - so.orderQty) / so.orderQty * 100);
-    final percentageColor = percentage > 30 ? Colors.red : (percentage > 0 ? Colors.orange : AppTheme.accentColor);
+    final percentageColor = percentage > 30
+        ? Colors.red
+        : (percentage > 0 ? Colors.orange : AppTheme.accentColor);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -384,7 +386,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 ),
                 // Percentage Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: percentageColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),

@@ -16,12 +16,20 @@ class ProductionOrderApprovalListScreen extends StatefulWidget {
 class _ProductionOrderApprovalListScreenState
     extends State<ProductionOrderApprovalListScreen> {
   List<ApprovalRequestModel> _requests = [];
+  List<ApprovalRequestModel> _filteredRequests = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadRequests();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRequests() async {
@@ -32,7 +40,23 @@ class _ProductionOrderApprovalListScreenState
     final poRequests = allRequests.where((r) => r.id >= 5).toList();
     setState(() {
       _requests = poRequests;
+      _filteredRequests = poRequests;
       _isLoading = false;
+    });
+  }
+
+  void _filterRequests(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredRequests = _requests;
+      } else {
+        _filteredRequests = _requests.where((request) {
+          final searchLower = query.toLowerCase();
+          return request.requestMessage.toLowerCase().contains(searchLower) ||
+              request.requesterName.toLowerCase().contains(searchLower) ||
+              request.requestDate.toLowerCase().contains(searchLower);
+        }).toList();
+      }
     });
   }
 
@@ -42,6 +66,37 @@ class _ProductionOrderApprovalListScreenState
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        titleSpacing: 16,
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search PO requests...',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              prefixIcon: Icon(Icons.search, color: AppTheme.secondaryColor),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear, color: AppTheme.secondaryColor),
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _filterRequests('');
+                        });
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            style: TextStyle(color: AppTheme.secondaryColor),
+            onChanged: _filterRequests,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -80,9 +135,9 @@ class _ProductionOrderApprovalListScreenState
                           color: AppTheme.secondaryColor,
                         ),
                       )
-                    : _requests.isEmpty
-                        ? _buildEmptyState()
-                        : _buildRequestList(),
+                    : _filteredRequests.isEmpty
+                    ? _buildEmptyState()
+                    : _buildRequestList(),
               ),
             ],
           ),
@@ -111,8 +166,11 @@ class _ProductionOrderApprovalListScreenState
                 ),
               ],
             ),
-            child: const Icon(Icons.precision_manufacturing,
-                color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.precision_manufacturing,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Column(
@@ -121,15 +179,15 @@ class _ProductionOrderApprovalListScreenState
               Text(
                 'Production Orders',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.secondaryColor,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.secondaryColor,
+                ),
               ),
               Text(
                 'Review and approve PO requests',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),
@@ -139,8 +197,13 @@ class _ProductionOrderApprovalListScreenState
   }
 
   Widget _buildStatCards() {
-    final pendingCount = _requests.where((r) => r.status == 'Pending').length;
-    final totalPOCount = _requests.fold<int>(0, (sum, r) => sum + r.soCount);
+    final pendingCount = _filteredRequests
+        .where((r) => r.status == 'Pending')
+        .length;
+    final totalPOCount = _filteredRequests.fold<int>(
+      0,
+      (sum, r) => sum + r.soCount,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -149,7 +212,7 @@ class _ProductionOrderApprovalListScreenState
           Expanded(
             child: _buildStatCard(
               'Total',
-              _requests.length.toString(),
+              _filteredRequests.length.toString(),
               Icons.folder_outlined,
               AppTheme.secondaryColor,
             ),
@@ -258,7 +321,7 @@ class _ProductionOrderApprovalListScreenState
       color: AppTheme.secondaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
-        itemCount: _requests.length,
+        itemCount: _filteredRequests.length,
         itemBuilder: (context, index) {
           return TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
@@ -273,7 +336,7 @@ class _ProductionOrderApprovalListScreenState
                 ),
               );
             },
-            child: _buildRequestCard(_requests[index]),
+            child: _buildRequestCard(_filteredRequests[index]),
           );
         },
       ),

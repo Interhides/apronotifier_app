@@ -15,12 +15,20 @@ class ApprovalRequestListScreen extends StatefulWidget {
 
 class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   List<ApprovalRequestModel> _requests = [];
+  List<ApprovalRequestModel> _filteredRequests = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadRequests();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRequests() async {
@@ -30,7 +38,23 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
     final soRequests = allRequests.where((r) => r.id < 5).toList();
     setState(() {
       _requests = soRequests;
+      _filteredRequests = soRequests;
       _isLoading = false;
+    });
+  }
+
+  void _filterRequests(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredRequests = _requests;
+      } else {
+        _filteredRequests = _requests.where((request) {
+          final searchLower = query.toLowerCase();
+          return request.requestMessage.toLowerCase().contains(searchLower) ||
+              request.requesterName.toLowerCase().contains(searchLower) ||
+              request.requestDate.toLowerCase().contains(searchLower);
+        }).toList();
+      }
     });
   }
 
@@ -40,6 +64,42 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        titleSpacing: 16,
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search SO requests...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                        _filterRequests('');
+                      },
+                    )
+                  : null,
+            ),
+            style: const TextStyle(fontSize: 14),
+            onChanged: _filterRequests,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -78,7 +138,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
                           color: AppTheme.primaryColor,
                         ),
                       )
-                    : _requests.isEmpty
+                    : _filteredRequests.isEmpty
                     ? _buildEmptyState()
                     : _buildRequestList(),
               ),
@@ -136,8 +196,13 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
   }
 
   Widget _buildStatCards() {
-    final pendingCount = _requests.where((r) => r.status == 'Pending').length;
-    final totalSOCount = _requests.fold<int>(0, (sum, r) => sum + r.soCount);
+    final pendingCount = _filteredRequests
+        .where((r) => r.status == 'Pending')
+        .length;
+    final totalSOCount = _filteredRequests.fold<int>(
+      0,
+      (sum, r) => sum + r.soCount,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -146,7 +211,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
           Expanded(
             child: _buildStatCard(
               'Total',
-              _requests.length.toString(),
+              _filteredRequests.length.toString(),
               Icons.folder_outlined,
               AppTheme.primaryColor,
             ),
@@ -255,7 +320,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
       color: AppTheme.primaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
-        itemCount: _requests.length,
+        itemCount: _filteredRequests.length,
         itemBuilder: (context, index) {
           return TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
@@ -270,7 +335,7 @@ class _ApprovalRequestListScreenState extends State<ApprovalRequestListScreen> {
                 ),
               );
             },
-            child: _buildRequestCard(_requests[index]),
+            child: _buildRequestCard(_filteredRequests[index]),
           );
         },
       ),
